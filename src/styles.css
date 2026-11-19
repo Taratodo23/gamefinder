@@ -2157,6 +2157,18 @@ textarea[aria-invalid='true'] {
   }
 }
 
+/* iOS hace zoom automático al enfocar campos con letra menor a 16 px.
+   Con 16 px no hay zoom y se mantiene el zoom manual (accesibilidad). */
+@media (max-width: 760px) {
+  input,
+  textarea,
+  select,
+  .buscador input,
+  .select select {
+    font-size: 16px;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
