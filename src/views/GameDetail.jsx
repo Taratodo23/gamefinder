@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
-import { obtenerJuego } from '../services/rawg'
+import { obtenerJuego, obtenerCapturas } from '../services/rawg'
+import Gallery from '../components/Gallery'
 import { BadgeEstado, Estrellas, Mensaje, Portada, Spinner } from '../components/ui'
 
 const formatoFecha = new Intl.DateTimeFormat('es-AR', { day: 'numeric', month: 'long', year: 'numeric' })
@@ -34,6 +35,23 @@ export default function GameDetail({ gameId, guardado, onVolver, onAgregar, onEd
       })
     return () => c.abort()
   }, [gameId, reintento])
+
+  // Galería: se pide aparte para no demorar la ficha
+  const [capturas, setCapturas] = useState([])
+  const [estadoCapturas, setEstadoCapturas] = useState('cargando')
+  useEffect(() => {
+    const c = new AbortController()
+    setEstadoCapturas('cargando')
+    obtenerCapturas(gameId, c.signal)
+      .then((lista) => {
+        setCapturas(lista)
+        setEstadoCapturas('listo')
+      })
+      .catch((e) => {
+        if (e.name !== 'AbortError') setEstadoCapturas('error')
+      })
+    return () => c.abort()
+  }, [gameId])
 
   async function agregar() {
     setAgregando(true)
@@ -123,6 +141,18 @@ export default function GameDetail({ gameId, guardado, onVolver, onAgregar, onEd
           </div>
         </div>
       </div>
+
+      {estadoCapturas === 'cargando' && (
+        <div className="galeria" aria-busy="true" aria-label="Cargando capturas">
+          <div className="galeria-tira">
+            {[0, 1, 2].map((i) => (
+              <div key={i} className="esqueleto esqueleto-captura" />
+            ))}
+          </div>
+        </div>
+      )}
+      {estadoCapturas === 'listo' && capturas.length > 0 && <Gallery capturas={capturas} titulo={juego.title} />}
+      {estadoCapturas === 'error' && <p className="ayuda galeria-error">No se pudieron cargar las capturas de este juego.</p>}
 
       <div className="detalle-cuerpo">
         <div className="detalle-descripcion">

@@ -45,3 +45,9 @@ export async function mockRecomendar() {
   await esperar(500)
   return { resultados: MOCKS, hayMas: false }
 }
+
+// Los juegos de prueba no tienen capturas
+export async function mockCapturas() {
+  await esperar(300)
+  return []
+}

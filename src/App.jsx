@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { useAuth } from './hooks/useAuth'
 import { useLibrary } from './hooks/useLibrary'
 import Sidebar, { BotonTema } from './components/Sidebar'
+import Account from './components/Account'
 import Toast from './components/Toast'
 import EditModal from './components/EditModal'
 import { Mensaje, Spinner } from './components/ui'
@@ -32,7 +33,7 @@ function Atribucion() {
 }
 
 export default function App() {
-  const { usuario, estado: estadoAuth, error: errorAuth } = useAuth()
+  const { usuario, perfil, estado: estadoAuth, error: errorAuth, iniciarConGoogle, cerrarSesion } = useAuth()
   const [toast, setToast] = useState(null)
   const avisar = useCallback((tipo, texto) => setToast({ tipo, texto, id: Date.now() }), [])
   const cerrarToast = useCallback(() => setToast(null), [])
@@ -50,6 +51,17 @@ export default function App() {
     }
   }, [tema])
   const cambiarTema = () => setTema((t) => (t === 'light' ? 'dark' : 'light'))
+
+  async function iniciarSesion() {
+    const r = await iniciarConGoogle()
+    if (r.mensaje) avisar(r.ok ? 'ok' : 'error', r.mensaje)
+  }
+
+  async function salir() {
+    const r = await cerrarSesion()
+    if (r.mensaje) avisar(r.ok ? 'ok' : 'error', r.mensaje)
+    setEditando(null)
+  }
 
   // Navegación: { nombre: 'descubrir' | 'biblioteca' | 'detalle', gameId, desde }
   const [vista, setVista] = useState({ nombre: 'descubrir' })
@@ -106,9 +118,18 @@ export default function App() {
         onCambiarTema={cambiarTema}
       />
 
-      <BotonTema tema={tema} onCambiar={cambiarTema} className="tema-movil" />
-
       <main className="contenido">
+        {/* Barra superior: cuenta (y tema en el celular) */}
+        <div className="barra-superior">
+          {/* Logo solo en el celular (en escritorio está en la barra lateral) */}
+          <button className="marca marca-movil" onClick={() => navegar('descubrir')} aria-label="GameFinder, ir al inicio">
+            <span className="marca-logo" aria-hidden="true" />
+            <span>GameFinder</span>
+          </button>
+          <BotonTema tema={tema} onCambiar={cambiarTema} className="tema-movil" />
+          <Account perfil={perfil} onIniciar={iniciarSesion} onCerrar={salir} />
+        </div>
+
         {/* Descubrir queda montado para no perder la búsqueda al volver del detalle */}
         <div hidden={vista.nombre !== 'descubrir'}>
           <Discover
@@ -134,6 +155,7 @@ export default function App() {
         {/* El recomendador también queda montado para no perder los resultados */}
         <div hidden={vista.nombre !== 'recomendador'}>
           <Recommender
+            key={usuario.uid}
             uid={usuario.uid}
             porId={biblioteca.porId}
             onAbrir={abrirDetalle}

@@ -3,6 +3,7 @@
 // Uso desde el frontend:
 //   /api/rawg?recurso=games&search=zelda&page=1
 //   /api/rawg?recurso=game&id=3498
+//   /api/rawg?recurso=capturas&id=3498
 
 const BASE = 'https://api.rawg.io/api'
 const PARAMS_PERMITIDOS = [
@@ -27,7 +28,7 @@ export default async function handler(req, res, claveLocal) {
   const recurso = entrada.get('recurso')
   let destino
 
-  // Solo se permiten dos recursos: así la función no queda como proxy abierto.
+  // Solo se permiten tres recursos: así la función no queda como proxy abierto.
   if (recurso === 'games') {
     destino = new URL(`${BASE}/games`)
     for (const p of PARAMS_PERMITIDOS) {
@@ -36,10 +37,11 @@ export default async function handler(req, res, claveLocal) {
     }
     const tam = Number(destino.searchParams.get('page_size') || 20)
     destino.searchParams.set('page_size', String(Math.min(Math.max(tam, 1), 40)))
-  } else if (recurso === 'game') {
+  } else if (recurso === 'game' || recurso === 'capturas') {
     const id = entrada.get('id') || ''
     if (!/^\d{1,10}$/.test(id)) return responder(res, 400, { error: 'bad_request' })
-    destino = new URL(`${BASE}/games/${id}`)
+    destino = new URL(recurso === 'game' ? `${BASE}/games/${id}` : `${BASE}/games/${id}/screenshots`)
+    if (recurso === 'capturas') destino.searchParams.set('page_size', '20')
   } else {
     return responder(res, 400, { error: 'bad_request' })
   }

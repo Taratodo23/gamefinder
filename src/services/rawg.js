@@ -1,6 +1,6 @@
 // Servicio de RAWG. El navegador nunca llama a RAWG directo:
 // pide a /api/rawg (función de Vercel), que agrega la API Key del servidor.
-import { mockBuscar, mockDetalle, mockRecomendar } from '../mocks/games'
+import { mockBuscar, mockDetalle, mockRecomendar, mockCapturas } from '../mocks/games'
 
 export const USANDO_MOCK = import.meta.env.VITE_USE_MOCK_DATA === 'true'
 
@@ -57,17 +57,40 @@ export function normalizarJuego(g) {
   }
 }
 
-// Búsqueda (o populares si no hay texto)
-export async function buscarJuegos({ texto = '', pagina = 1, signal } = {}) {
+const DIA = 86400000
+const iso = (fecha) => fecha.toISOString().slice(0, 10)
+
+// Órdenes disponibles en Descubrir. RAWG no tiene datos de ventas,
+// así que "Populares" usa la cantidad de personas que agregaron el juego.
+export const ORDENES = [
+  { valor: 'populares', texto: 'Populares', titulo: 'Populares en RAWG' },
+  { valor: 'puntuados', texto: 'Mejor puntuados', titulo: 'Mejor puntuados por la crítica' },
+  { valor: 'novedades', texto: 'Novedades', titulo: 'Novedades de los últimos 4 meses' },
+  { valor: 'proximos', texto: 'Próximos', titulo: 'Próximos lanzamientos' },
+]
+
+function parametrosDeOrden(orden) {
+  const hoy = new Date()
+  if (orden === 'puntuados') return { ordering: '-metacritic', metacritic: '50,100' }
+  if (orden === 'novedades') return { ordering: '-added', dates: `${iso(new Date(hoy - 120 * DIA))},${iso(hoy)}` }
+  if (orden === 'proximos') return { ordering: '-added', dates: `${iso(new Date(+hoy + DIA))},${iso(new Date(+hoy + 540 * DIA))}` }
+  return { ordering: '-added' }
+}
+
+// Búsqueda con filtros. Aunque haya texto, se ordena por popularidad:
+// sin orden, RAWG prioriza coincidencias literales poco conocidas
+// (buscar "gta" traía "GTA-bankrob" antes que GTA V).
+export async function buscarJuegos({ texto = '', pagina = 1, orden = 'populares', genero = '', plataforma = '', signal } = {}) {
   if (USANDO_MOCK) return mockBuscar(texto, pagina)
 
-  const params = { recurso: 'games', page: String(pagina), page_size: '20' }
+  const params = { recurso: 'games', page: String(pagina), page_size: '20', ...parametrosDeOrden(orden) }
   if (texto.trim()) {
     params.search = texto.trim()
     params.search_precise = 'true'
-  } else {
-    params.ordering = '-added'
   }
+  if (genero) params.genres = genero
+  if (plataforma) params.parent_platforms = String(plataforma)
+
   const datos = await pedir(params, signal)
   return {
     resultados: (datos.results || []).map(normalizarJuego),
@@ -92,6 +115,15 @@ export async function obtenerJuego(id, signal) {
     website: g.website || null,
     rawgUrl: g.slug ? `https://rawg.io/games/${g.slug}` : null,
   }
+}
+
+// Galería: capturas de pantalla del juego (las que no tienen imagen se descartan)
+export async function obtenerCapturas(id, signal) {
+  if (USANDO_MOCK) return mockCapturas(id)
+  const datos = await pedir({ recurso: 'capturas', id: String(id) }, signal)
+  return (datos.results || [])
+    .filter((c) => c.image && !c.is_deleted)
+    .map((c) => ({ id: c.id, imagen: c.image, ancho: c.width || null, alto: c.height || null }))
 }
 
 // Rango de fechas de cada época (formato que pide RAWG: desde,hasta)

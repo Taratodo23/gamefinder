@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
-import { buscarJuegos, USANDO_MOCK } from '../services/rawg'
+import { buscarJuegos, USANDO_MOCK, ORDENES } from '../services/rawg'
+import { GENEROS, PLATAFORMAS, textoDe } from '../constants'
 import GameCard from '../components/GameCard'
 import { Mensaje } from '../components/ui'
 
@@ -16,6 +17,9 @@ export default function Discover({ porId, onAbrir, onAgregar, puedeGuardar }) {
   const [cargandoMas, setCargandoMas] = useState(false)
   const [error, setError] = useState('')
   const [reintento, setReintento] = useState(0)
+  const [orden, setOrden] = useState('populares')
+  const [genero, setGenero] = useState('')
+  const [plataforma, setPlataforma] = useState('')
   const controlador = useRef(null)
 
   // Espera a que el usuario deje de escribir
@@ -31,7 +35,7 @@ export default function Discover({ porId, onAbrir, onAgregar, puedeGuardar }) {
     controlador.current = c
     setEstado('cargando')
     setError('')
-    buscarJuegos({ texto: consulta, pagina: 1, signal: c.signal })
+    buscarJuegos({ texto: consulta, pagina: 1, orden, genero, plataforma, signal: c.signal })
       .then((r) => {
         setResultados(r.resultados)
         setHayMas(r.hayMas)
@@ -45,12 +49,12 @@ export default function Discover({ porId, onAbrir, onAgregar, puedeGuardar }) {
         setEstado('error')
       })
     return () => c.abort()
-  }, [consulta, reintento])
+  }, [consulta, orden, genero, plataforma, reintento])
 
   async function cargarMas() {
     setCargandoMas(true)
     try {
-      const r = await buscarJuegos({ texto: consulta, pagina: pagina + 1 })
+      const r = await buscarJuegos({ texto: consulta, pagina: pagina + 1, orden, genero, plataforma })
       setResultados((xs) => {
         const vistos = new Set(xs.map((x) => x.id))
         return [...xs, ...r.resultados.filter((x) => !vistos.has(x.id))]
@@ -69,7 +73,15 @@ export default function Discover({ porId, onAbrir, onAgregar, puedeGuardar }) {
     setConsulta(texto.trim())
   }
 
-  const titulo = consulta ? `Resultados para “${consulta}”` : 'Populares en RAWG'
+  const ordenActual = ORDENES.find((o) => o.valor === orden)
+  const titulo = consulta ? `Resultados para “${consulta}”` : ordenActual.titulo
+  const hayFiltros = genero || plataforma || orden !== 'populares'
+
+  function limpiarFiltros() {
+    setOrden('populares')
+    setGenero('')
+    setPlataforma('')
+  }
 
   return (
     <section className="vista" aria-labelledby="titulo-descubrir">
@@ -105,8 +117,54 @@ export default function Discover({ porId, onAbrir, onAgregar, puedeGuardar }) {
         </div>
       )}
 
+      <div className="barra-filtros">
+        <div className="filtros" role="tablist" aria-label="Ordenar juegos">
+          {ORDENES.map((o) => (
+            <button
+              key={o.valor}
+              role="tab"
+              aria-selected={orden === o.valor}
+              className={`filtro ${orden === o.valor ? 'activo' : ''}`}
+              onClick={() => setOrden(o.valor)}
+            >
+              {o.texto}
+            </button>
+          ))}
+        </div>
+        <div className="selects">
+          <label className="select">
+            <span className="sr-only">Género</span>
+            <select value={genero} onChange={(e) => setGenero(e.target.value)}>
+              <option value="">Género: todos</option>
+              {GENEROS.map((g) => (
+                <option key={g.valor} value={g.valor}>{g.texto}</option>
+              ))}
+            </select>
+          </label>
+          <label className="select">
+            <span className="sr-only">Plataforma</span>
+            <select value={plataforma} onChange={(e) => setPlataforma(e.target.value)}>
+              <option value="">Plataforma: todas</option>
+              {PLATAFORMAS.map((p) => (
+                <option key={p.valor} value={p.valor}>{p.texto}</option>
+              ))}
+            </select>
+          </label>
+          {hayFiltros && (
+            <button className="btn btn-fantasma btn-chico" onClick={limpiarFiltros}>Limpiar</button>
+          )}
+        </div>
+      </div>
+
       <div className="seccion-titulo">
-        <h2>{titulo}</h2>
+        <h2>
+          {titulo}
+          {(genero || plataforma) && (
+            <span className="filtros-activos">
+              {[genero && textoDe(GENEROS, genero), plataforma && textoDe(PLATAFORMAS, Number(plataforma))].filter(Boolean).join(' · ')}
+            </span>
+          )}
+        </h2>
         {estado === 'listo' && total > 0 && (
           <span className="ayuda">{total.toLocaleString('es-AR')} juegos</span>
         )}
@@ -136,7 +194,12 @@ export default function Discover({ porId, onAbrir, onAgregar, puedeGuardar }) {
       {estado === 'listo' && resultados.length === 0 && (
         <Mensaje
           titulo="Sin resultados"
-          texto={`No encontramos juegos para “${consulta}”. Probá con otro nombre o revisá cómo está escrito.`}
+          texto={
+            consulta
+              ? `No encontramos juegos para “${consulta}”${hayFiltros ? ' con estos filtros' : ''}. Probá con otro nombre${hayFiltros ? ' o limpiá los filtros' : ''}.`
+              : 'No hay juegos con esta combinación de filtros. Probá con otra.'
+          }
+          accion={hayFiltros ? <button className="btn btn-secundario" onClick={limpiarFiltros}>Limpiar filtros</button> : null}
         />
       )}
 

@@ -11,12 +11,14 @@ Trabajo Práctico 2 — Desarrollo Frontend II (UADE).
 ## Funcionalidades
 
 - **Descubrir:** juegos populares y búsqueda por nombre, con portada, géneros, plataformas y puntajes cuando RAWG los tiene.
-- **Detalle:** descripción, fecha de lanzamiento, plataformas, desarrolladores y enlaces, más el botón para agregar el juego a la biblioteca.
+- **Detalle:** descripción, fecha de lanzamiento, plataformas, desarrolladores y enlaces, galería de capturas con visor a pantalla completa (v3) y el botón para agregar el juego a la biblioteca.
 - **Mi biblioteca:** juegos guardados en Firestore con filtros por estado (pendiente, jugando, completado, abandonado).
 - **Edición:** cambiar estado, puntuación personal (0 a 5) y nota (hasta 500 caracteres).
 - **Estados de interfaz:** carga, error con reintento, sin resultados, biblioteca vacía y mensajes de éxito o error.
 - **Encontrá tu juego (v2):** recomendador que pregunta tus gustos (géneros, plataformas, época, estilo), los guarda en Firestore y arma una lista sin repetir lo que ya tenés, explicando por qué te recomienda cada juego.
 - **Responsive:** barra lateral en escritorio y barra inferior en el celular.
+- **Cuenta de Google opcional (v3):** vincula la biblioteca anónima a tu cuenta para verla en todos tus dispositivos. No se guarda ningún dato personal.
+- **Filtros en Descubrir (v3):** populares, mejor puntuados, novedades y próximos, más género y plataforma. La búsqueda prioriza los juegos más conocidos.
 - **Modo claro y oscuro (v2):** respeta la preferencia del sistema y recuerda la elección.
 
 ## Estructura
@@ -97,7 +99,8 @@ En desarrollo, `npm run dev` atiende `/api/rawg` con un plugin definido en `vite
 
 1. En [Firebase Console](https://console.firebase.google.com/), crear un proyecto. Google Analytics no hace falta.
 2. Registrar una app web (botón `</>`) y copiar `apiKey`, `authDomain`, `projectId` y `appId` al `.env`.
-3. En **Authentication → Sign-in method**, habilitar **Anónimo**.
+3. En **Authentication → Sign-in method**, habilitar **Anónimo** y **Google** (este último es opcional y lo usa el botón "Continuar con Google").
+   En **Authentication → Configuración → Dominios autorizados**, agregar el dominio de Vercel (por ejemplo, `gamefinder-tp2.vercel.app`).
 4. En **Firestore Database**, crear la base (edición Standard, id `(default)`, región `southamerica-east1`) en **modo producción**.
 5. En **Firestore → Reglas**, pegar el contenido de `firestore.rules` y **Publicar**.
 
