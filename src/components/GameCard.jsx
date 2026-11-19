@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { Portada } from './ui'
 
 // Tarjeta de un resultado de RAWG en Descubrir
-export default function GameCard({ juego, enBiblioteca, onAbrir, onAgregar, puedeGuardar }) {
+export default function GameCard({ juego, enBiblioteca, onAbrir, onAgregar, puedeGuardar, motivo }) {
   const [guardando, setGuardando] = useState(false)
 
   async function agregar() {
@@ -26,6 +26,7 @@ export default function GameCard({ juego, enBiblioteca, onAbrir, onAgregar, pued
             {juego.genres.length > 0 && <span>{juego.genres.slice(0, 2).join(' · ')}</span>}
             {juego.rating && <span className="rating-rawg">★ {juego.rating.toFixed(1)}</span>}
           </div>
+          {motivo && <p className="motivo">{motivo}</p>}
           {juego.platforms.length > 0 && (
             <ul className="plataformas" aria-label="Plataformas">
               {juego.platforms.slice(0, 4).map((p) => (

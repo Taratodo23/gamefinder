@@ -1,13 +1,26 @@
-import { useCallback, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { useAuth } from './hooks/useAuth'
 import { useLibrary } from './hooks/useLibrary'
-import Sidebar from './components/Sidebar'
+import Sidebar, { BotonTema } from './components/Sidebar'
 import Toast from './components/Toast'
 import EditModal from './components/EditModal'
 import { Mensaje, Spinner } from './components/ui'
 import Discover from './views/Discover'
 import GameDetail from './views/GameDetail'
 import Library from './views/Library'
+import Recommender from './views/Recommender'
+
+// Tema claro/oscuro: se recuerda en el navegador (es una preferencia visual,
+// no un dato de la app, por eso no va a Firestore).
+function temaInicial() {
+  try {
+    const guardado = localStorage.getItem('gf-tema')
+    if (guardado === 'light' || guardado === 'dark') return guardado
+  } catch {
+    /* sin acceso a localStorage */
+  }
+  return window.matchMedia?.('(prefers-color-scheme: light)').matches ? 'light' : 'dark'
+}
 
 function Atribucion() {
   return (
@@ -25,6 +38,18 @@ export default function App() {
   const cerrarToast = useCallback(() => setToast(null), [])
 
   const biblioteca = useLibrary(usuario?.uid, avisar)
+
+  const [tema, setTema] = useState(temaInicial)
+  useEffect(() => {
+    document.documentElement.dataset.theme = tema
+    document.querySelector('meta[name="theme-color"]')?.setAttribute('content', tema === 'light' ? '#f4f5f7' : '#0d0e11')
+    try {
+      localStorage.setItem('gf-tema', tema)
+    } catch {
+      /* sin acceso a localStorage */
+    }
+  }, [tema])
+  const cambiarTema = () => setTema((t) => (t === 'light' ? 'dark' : 'light'))
 
   // Navegación: { nombre: 'descubrir' | 'biblioteca' | 'detalle', gameId, desde }
   const [vista, setVista] = useState({ nombre: 'descubrir' })
@@ -73,7 +98,15 @@ export default function App() {
 
   return (
     <div className="app">
-      <Sidebar vista={vista.nombre} onNavegar={navegar} cantidad={biblioteca.items.length} />
+      <Sidebar
+        vista={vista.nombre}
+        onNavegar={navegar}
+        cantidad={biblioteca.items.length}
+        tema={tema}
+        onCambiarTema={cambiarTema}
+      />
+
+      <BotonTema tema={tema} onCambiar={cambiarTema} className="tema-movil" />
 
       <main className="contenido">
         {/* Descubrir queda montado para no perder la búsqueda al volver del detalle */}
@@ -97,6 +130,18 @@ export default function App() {
             puedeGuardar={puedeGuardar}
           />
         )}
+
+        {/* El recomendador también queda montado para no perder los resultados */}
+        <div hidden={vista.nombre !== 'recomendador'}>
+          <Recommender
+            uid={usuario.uid}
+            porId={biblioteca.porId}
+            onAbrir={abrirDetalle}
+            onAgregar={biblioteca.agregar}
+            puedeGuardar={puedeGuardar}
+            avisar={avisar}
+          />
+        </div>
 
         {vista.nombre === 'biblioteca' && (
           <Library

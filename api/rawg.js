@@ -5,7 +5,10 @@
 //   /api/rawg?recurso=game&id=3498
 
 const BASE = 'https://api.rawg.io/api'
-const PARAMS_PERMITIDOS = ['search', 'search_precise', 'page', 'page_size', 'ordering', 'genres', 'platforms']
+const PARAMS_PERMITIDOS = [
+  'search', 'search_precise', 'page', 'page_size', 'ordering',
+  'genres', 'platforms', 'parent_platforms', 'dates', 'tags', 'metacritic', 'exclude_additions',
+]
 
 function responder(res, status, cuerpo, cache) {
   res.statusCode = status

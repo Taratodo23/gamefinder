@@ -38,6 +38,25 @@ service cloud.firestore {
         && request.resource.data.updatedAt == request.time;
     }
 
+    // Gustos del recomendador: un único documento por usuario.
+    function preferenciasValidas(d) {
+      return d.keys().hasOnly(['genres', 'platforms', 'era', 'mode', 'quality', 'updatedAt'])
+        && d.keys().hasAll(['genres', 'platforms', 'era', 'mode', 'quality', 'updatedAt'])
+        && d.genres is list && d.genres.size() >= 1 && d.genres.size() <= 5
+        && d.platforms is list && d.platforms.size() <= 8
+        && d.era in ['cualquiera', 'clasicos', 'decada', 'recientes']
+        && d.mode in ['cualquiera', 'singleplayer', 'multiplayer', 'co-op']
+        && d.quality is bool
+        && d.updatedAt == request.time;
+    }
+
+    match /users/{uid}/preferences/{prefId} {
+      allow read, delete: if esDueno(uid);
+      allow create, update: if esDueno(uid)
+        && prefId == 'recomendador'
+        && preferenciasValidas(request.resource.data);
+    }
+
     // Todo lo demás queda cerrado.
     match /{document=**} {
       allow read, write: if false;

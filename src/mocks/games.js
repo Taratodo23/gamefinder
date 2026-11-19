@@ -9,7 +9,7 @@ const MOCKS = [
   { id: 900004, title: 'Juego de prueba: Plataformas', genres: ['Plataformas'], platforms: ['Nintendo'], released: null },
   { id: 900005, title: 'Juego de prueba: Rol', genres: ['RPG'], platforms: ['PC', 'Xbox'], released: null },
   { id: 900006, title: 'Juego de prueba: Puzzle', genres: ['Puzzle'], platforms: ['iOS', 'Android'], released: null },
-].map((m) => ({ ...m, cover: null, rating: null, metacritic: null }))
+].map((m) => ({ ...m, genreSlugs: [], cover: null, rating: null, metacritic: null }))
 
 const esperar = (ms) => new Promise((r) => setTimeout(r, ms))
 
@@ -39,4 +39,9 @@ export async function mockDetalle(id) {
     website: null,
     rawgUrl: null,
   }
+}
+
+export async function mockRecomendar() {
+  await esperar(500)
+  return { resultados: MOCKS, hayMas: false }
 }

@@ -1,6 +1,6 @@
 // Servicio de RAWG. El navegador nunca llama a RAWG directo:
 // pide a /api/rawg (función de Vercel), que agrega la API Key del servidor.
-import { mockBuscar, mockDetalle } from '../mocks/games'
+import { mockBuscar, mockDetalle, mockRecomendar } from '../mocks/games'
 
 export const USANDO_MOCK = import.meta.env.VITE_USE_MOCK_DATA === 'true'
 
@@ -52,6 +52,7 @@ export function normalizarJuego(g) {
     rating: g.rating > 0 ? g.rating : null,
     metacritic: g.metacritic ?? null,
     genres: (g.genres || []).map((x) => x.name),
+    genreSlugs: (g.genres || []).map((x) => x.slug),
     platforms: (g.parent_platforms || []).map((p) => p.platform.name),
   }
 }
@@ -90,5 +91,39 @@ export async function obtenerJuego(id, signal) {
     esrb: g.esrb_rating?.name || null,
     website: g.website || null,
     rawgUrl: g.slug ? `https://rawg.io/games/${g.slug}` : null,
+  }
+}
+
+// Rango de fechas de cada época (formato que pide RAWG: desde,hasta)
+function fechasDeEpoca(epoca) {
+  const hoy = new Date().toISOString().slice(0, 10)
+  if (epoca === 'clasicos') return '1970-01-01,2009-12-31'
+  if (epoca === 'decada') return '2010-01-01,2019-12-31'
+  if (epoca === 'recientes') return `2020-01-01,${hoy}`
+  return null
+}
+
+// Recomendador: arma la consulta a RAWG a partir de los gustos del usuario
+export async function recomendarJuegos(prefs, { pagina = 1, signal } = {}) {
+  if (USANDO_MOCK) return mockRecomendar(prefs)
+
+  const params = {
+    recurso: 'games',
+    page: String(pagina),
+    page_size: '40',
+    ordering: '-added',
+    exclude_additions: 'true',
+    genres: prefs.genres.join(','),
+  }
+  if (prefs.platforms.length) params.parent_platforms = prefs.platforms.join(',')
+  const fechas = fechasDeEpoca(prefs.era)
+  if (fechas) params.dates = fechas
+  if (prefs.mode !== 'cualquiera') params.tags = prefs.mode
+  if (prefs.quality) params.metacritic = '75,100'
+
+  const datos = await pedir(params, signal)
+  return {
+    resultados: (datos.results || []).map(normalizarJuego),
+    hayMas: Boolean(datos.next),
   }
 }

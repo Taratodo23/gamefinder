@@ -4,7 +4,8 @@ Aplicación web para descubrir videojuegos (con datos de [RAWG](https://rawg.io)
 
 Trabajo Práctico 2 — Desarrollo Frontend II (UADE).
 
-- **App publicada:** _(completar con la URL de Vercel)_
+- **App publicada:** https://gamefinder-tp2.vercel.app
+- **Repositorio:** https://github.com/Taratodo23/gamefinder
 - **Stack:** React + Vite, Firebase Authentication (anónima), Cloud Firestore y una función serverless de Vercel como intermediaria con RAWG.
 
 ## Funcionalidades
@@ -14,7 +15,9 @@ Trabajo Práctico 2 — Desarrollo Frontend II (UADE).
 - **Mi biblioteca:** juegos guardados en Firestore con filtros por estado (pendiente, jugando, completado, abandonado).
 - **Edición:** cambiar estado, puntuación personal (0 a 5) y nota (hasta 500 caracteres).
 - **Estados de interfaz:** carga, error con reintento, sin resultados, biblioteca vacía y mensajes de éxito o error.
+- **Encontrá tu juego (v2):** recomendador que pregunta tus gustos (géneros, plataformas, época, estilo), los guarda en Firestore y arma una lista sin repetir lo que ya tenés, explicando por qué te recomienda cada juego.
 - **Responsive:** barra lateral en escritorio y barra inferior en el celular.
+- **Modo claro y oscuro (v2):** respeta la preferencia del sistema y recuerda la elección.
 
 ## Estructura
 
@@ -24,10 +27,11 @@ src/
   firebase.js            Inicialización de Firebase con variables VITE_FIREBASE_*
   services/library.js    Consultar, crear, editar y eliminar en Firestore
   services/rawg.js       Consumo de /api/rawg y normalización de datos
+  services/preferences.js  Gustos del recomendador en Firestore
   mocks/games.js         Datos de prueba (solo con VITE_USE_MOCK_DATA=true)
   hooks/useAuth.js       Acceso anónimo
   hooks/useLibrary.js    Estado de la biblioteca y operaciones
-  views/                 Discover, GameDetail y Library
+  views/                 Discover, GameDetail, Library y Recommender
   components/            Sidebar, GameCard, LibraryCard, EditModal, Toast, ui
   styles.css             Estilos y diseño responsive
 firestore.rules          Reglas de seguridad de Firestore
@@ -47,6 +51,17 @@ Ruta: `users/{uid}/library/{gameId}`
 | rating | number | 0 a 5 (0 = sin puntuar) |
 | note | string | hasta 500 caracteres |
 | createdAt / updatedAt | timestamp | fecha del servidor |
+
+Ruta: `users/{uid}/preferences/recomendador` (v2)
+
+| Campo | Tipo | Detalle |
+|---|---|---|
+| genres | array | 1 a 5 géneros (slugs de RAWG) |
+| platforms | array | ids de plataforma de RAWG (puede estar vacío) |
+| era | string | `cualquiera`, `clasicos`, `decada` o `recientes` |
+| mode | string | `cualquiera`, `singleplayer`, `multiplayer` o `co-op` |
+| quality | boolean | solo juegos con Metacritic 75 o más |
+| updatedAt | timestamp | fecha del servidor |
 
 ## Requisitos
 
