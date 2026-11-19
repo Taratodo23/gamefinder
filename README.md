@@ -37,7 +37,6 @@ src/
   components/            Sidebar, GameCard, LibraryCard, EditModal, Toast, ui
   styles.css             Estilos y diseño responsive
 firestore.rules          Reglas de seguridad de Firestore
-docs/bitacora.md         Bitácora del proceso
 ```
 
 ## Datos en Firestore
